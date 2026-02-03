@@ -1,7 +1,8 @@
 import axios from 'axios';
 
 const API = axios.create({
-  baseURL: 'https://crypto-wallet-api-f3v6.onrender.com/', // Đảm bảo port 5000 đúng với backend
+  baseURL: import.meta.env.VITE_API_BASE,
+
 });
 
 // --- PHẦN QUAN TRỌNG NHẤT: Tự động gắn Token ---
