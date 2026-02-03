@@ -1,12 +1,13 @@
-import axios from "axios";
-const API = axios.create({ baseURL: import.meta.env.VITE_API_BASE + "/auth" });
+import API from "./api"; // Import cái API bạn vừa sửa ở Bước 2
 
-export const getNonce = async (address) => {
-  const res = await API.get(`/nonce/${address}`);
+export const forgotPassword = async (email) => {
+  // Vì baseURL đã có /api, ở đây ta gọi thêm /auth/forgotpassword
+  const res = await API.post("/auth/forgotpassword", { email });
   return res.data;
 };
 
-export const loginWithSignature = async (address, signature) => {
-  const res = await API.post("/login", { address, signature });
-  return res.data; // { token, user }
+export const login = async (credentials) => {
+  const res = await API.post("/auth/login", credentials);
+  return res.data;
 };
+
