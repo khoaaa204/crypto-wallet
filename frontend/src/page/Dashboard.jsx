@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { ethers } from 'ethers';
 import axios from 'axios';
-import API from '../api/api'; // Đảm bảo đường dẫn đúng
+import API from '../api/api'; 
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
@@ -21,6 +21,7 @@ import { fetchTransactionHistory, fetchTokenBalance, switchNetwork } from '../ut
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const fileInputRef = useRef(null); 
   
   // --- STATE ---
   const [loading, setLoading] = useState(true);
@@ -30,6 +31,11 @@ export default function Dashboard() {
   const [currency, setCurrency] = useState('USD'); 
   const [exchangeRate, setExchangeRate] = useState(25000); 
   
+  // State Profile (Tạm thời và Chính thức)
+  const [walletName, setWalletName] = useState(localStorage.getItem('userWalletName') || 'Ví của tôi');
+  const [avatar, setAvatar] = useState(localStorage.getItem('userAvatar') || 'https://i.pravatar.cc/150?img=12');
+  const [showSettings, setShowSettings] = useState(false);
+
   // Data State
   const [assets, setAssets] = useState([]); 
   const [transactions, setTransactions] = useState([]); 
@@ -40,8 +46,7 @@ export default function Dashboard() {
     return saved ? JSON.parse(saved) : null;
   });
 
-  // --- LOGIC TỰ ĐỘNG PHÁT HIỆN MẠNG ---
-  // Tìm xem ID mạng hiện tại (ví dụ 0xaa36a7) có khớp với key nào trong NETWORKS không
+  // Tự động phát hiện tên mạng
   const currentNetworkKey = Object.keys(NETWORKS).find(
     (key) => NETWORKS[key].chainId.toLowerCase() === String(currentChainId).toLowerCase()
   ) || "";
@@ -54,7 +59,6 @@ export default function Dashboard() {
 
   // --- EFFECT ---
   useEffect(() => {
-    // Set Theme
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('theme', theme);
 
@@ -64,21 +68,15 @@ export default function Dashboard() {
     }
 
     const initDashboard = async () => {
-      try {
-        await API.get('/wallets'); // Check token
-      } catch (err) { /* Silent fail */ }
+      try { await API.get('/wallets'); } catch (err) { /* Silent fail */ }
       setLoading(false);
 
       if (window.ethereum) {
         try {
           const provider = new ethers.BrowserProvider(window.ethereum);
-          
-          // 1. Lấy thông tin mạng ban đầu
           const network = await provider.getNetwork();
-          const chainIdHex = "0x" + network.chainId.toString(16);
-          setCurrentChainId(chainIdHex);
+          setCurrentChainId("0x" + network.chainId.toString(16));
 
-          // 2. Lấy thông tin tài khoản
           const accounts = await window.ethereum.request({ method: 'eth_accounts' });
           if (accounts.length > 0) {
             const metaMaskAddress = accounts[0];
@@ -88,33 +86,61 @@ export default function Dashboard() {
             }
           }
           
-          // 3. LẮNG NGHE SỰ KIỆN ĐỔI MẠNG (Tự động cập nhật UI)
           window.ethereum.on('chainChanged', (newChainId) => {
-            console.log("Mạng đã đổi sang:", newChainId);
             setCurrentChainId(newChainId);
-            window.location.reload(); // Reload để làm mới dữ liệu
+            window.location.reload(); 
           });
 
-        } catch (err) {
-          console.error(err);
-        }
+        } catch (err) { console.error(err); }
       }
     };
 
     initDashboard();
     fetchMarketPrices();
     
-    // Auto refresh giá mỗi 60s
     const interval = setInterval(fetchMarketPrices, 60000);
     return () => clearInterval(interval);
   }, [navigate, theme, currentUser]);
 
-  // --- HELPERS ---
+  // --- HANDLERS PROFILE (Cập nhật tên, ảnh, lưu, logout) ---
+  
+  const handleNameChange = (e) => {
+    setWalletName(e.target.value);
+  };
+
+  const handleAvatarUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAvatar(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSaveSettings = () => {
+    localStorage.setItem('userWalletName', walletName);
+    localStorage.setItem('userAvatar', avatar);
+    toast.success("✅ Đã lưu cài đặt!");
+    setShowSettings(false);
+  };
+
+  const handleLogout = () => {
+  const confirmLogout = window.confirm("Bạn có chắc chắn muốn đăng xuất?");
+  if (confirmLogout) {
+    
+    localStorage.removeItem('user');  
+    localStorage.removeItem('token'); 
+    localStorage.removeItem('accessToken'); 
+    navigate('/login');
+  }
+};
+  // --- LOGIC BLOCKCHAIN & API (Đã khôi phục đầy đủ) ---
+
   const formatMoney = (amountUSD) => {
     const val = parseFloat(amountUSD || 0);
-    if (currency === 'VND') {
-      return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val * exchangeRate);
-    }
+    if (currency === 'VND') return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val * exchangeRate);
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val);
   };
 
@@ -122,8 +148,6 @@ export default function Dashboard() {
     if (!window.ethereum) return;
     try {
       const provider = new ethers.BrowserProvider(window.ethereum);
-      
-      // Update lại ChainId để chắc chắn
       const network = await provider.getNetwork();
       const chainIdHex = "0x" + network.chainId.toString(16);
       setCurrentChainId(chainIdHex);
@@ -131,31 +155,29 @@ export default function Dashboard() {
       let activeNetworkKey = Object.keys(NETWORKS).find(key => NETWORKS[key].chainId == chainIdHex);
       let activeNetworkConfig = NETWORKS[activeNetworkKey];
 
-      // Lấy số dư Native
       const balance = await provider.getBalance(address);
       const nativeSymbol = activeNetworkConfig?.nativeCurrency.symbol || "ETH";
       const networkName = activeNetworkConfig ? activeNetworkConfig.chainName : "Unknown Network";
       
       const nativeAsset = {
-        id: 'native',
-        symbol: nativeSymbol,
+        id: 'native', 
+        symbol: nativeSymbol, 
         name: networkName, 
         balance: parseFloat(ethers.formatEther(balance)).toFixed(4),
-        price: getPriceFromMarket(nativeSymbol),
+        price: getPriceFromMarket(nativeSymbol), 
         icon: '💎'
       };
 
       setAssets([nativeAsset]); 
 
-      // Lấy lịch sử giao dịch
       if (activeNetworkConfig) {
         const history = await fetchTransactionHistory(address, activeNetworkConfig);
         setTransactions(history);
-      } else {
+      } else { 
         setTransactions([]); 
       }
-    } catch (error) {
-      console.error("Lỗi load blockchain:", error);
+    } catch (error) { 
+      console.error("Lỗi load blockchain:", error); 
     }
   };
 
@@ -168,8 +190,8 @@ export default function Dashboard() {
       if (newToken) {
         setAssets(prev => [...prev, { ...newToken, icon: '🪙', price: 1 }]); 
         toast.success(`Đã thêm token ${newToken.symbol}`);
-      } else {
-        toast.error("Không thể đọc token hoặc mạng không hỗ trợ.");
+      } else { 
+        toast.error("Không thể đọc token hoặc mạng không hỗ trợ."); 
       }
     } catch (e) { toast.error("Lỗi Import Token"); }
   };
@@ -208,7 +230,6 @@ export default function Dashboard() {
         if(a.symbol === 'BNB' && data.binancecoin) return { ...a, price: data.binancecoin.usd };
         return a;
       }));
-
     } catch (e) {
       console.log("CoinGecko Error (Rate Limit?)");
     }
@@ -224,11 +245,12 @@ export default function Dashboard() {
   const copyToClipboard = (text) => {
     if (!text || text === "Chưa kết nối") return;
     navigator.clipboard.writeText(text);
-    toast.success("Đã sao chép!");
+    toast.success("Đã sao chép ID Ví!");
   };
 
   const displayAddress = web3Address || "Chưa kết nối";
   const mainCoin = assets.length > 0 ? assets[0] : { balance: 0, symbol: '...' };
+  const shortAddress = web3Address ? `${web3Address.slice(0, 6)}...${web3Address.slice(-4)}` : 'Chưa kết nối';
 
   if (loading) return <div className="loading-screen">🚀 Đang tải dữ liệu...</div>;
 
@@ -239,7 +261,7 @@ export default function Dashboard() {
       <header className="dashboard-header">
         <h2>CryptoDash</h2>
         <div className="header-actions">
-          {/* SELECT MẠNG (Tự động cập nhật value) */}
+          {/* Chọn Mạng */}
           <select 
             className="network-select" 
             onChange={(e) => switchNetwork(e.target.value, NETWORKS)} 
@@ -262,19 +284,86 @@ export default function Dashboard() {
             🔄 Swap
           </Link>
           
-          <MetaMaskConnect onConnect={handleWalletConnect} savedAddress={web3Address} />
-          
-          <button className="btn-action" onClick={() => setCurrency(c => c === 'USD' ? 'VND' : 'USD')}>
-            {currency === 'USD' ? '🇺🇸' : '🇻🇳'}
-          </button>
-          
-          <button className="theme-btn" onClick={() => setTheme(t => t === 'light' ? 'dark' : 'light')}>
-            {theme === 'light' ? 'Dark' : 'Light'}
-          </button>
-          
-          <button onClick={() => { localStorage.clear(); navigate('/login'); }} className="logout-btn">
-            Thoát
-          </button>
+          {/* Kết nối ví ẩn (logic chạy ngầm) */}
+          <div style={{display:'none'}}>
+             <MetaMaskConnect onConnect={handleWalletConnect} savedAddress={web3Address} />
+          </div>
+
+          {/* --- WALLET PROFILE (Avatar + Tên) --- */}
+          <div className="wallet-profile-container">
+            <div className="wallet-info">
+              <img src={avatar} alt="avt" className="wallet-avatar-small" />
+              <div className="wallet-text">
+                <span className="w-name">{walletName}</span>
+                <span className="w-addr">{shortAddress}</span>
+              </div>
+            </div>
+
+            <button className="btn-settings" onClick={() => setShowSettings(!showSettings)}>
+              ⚙️
+            </button>
+
+            {/* --- DROPDOWN MENU --- */}
+            {showSettings && (
+              <div className="settings-dropdown">
+                <h3>Cài đặt Ví</h3>
+                
+                {/* Upload Ảnh */}
+                <div className="setting-item">
+                  <label>Ảnh đại diện</label>
+                  <div className="avatar-uploader" onClick={() => fileInputRef.current.click()}>
+                     <img src={avatar} alt="Upload" />
+                     <span>Chọn ảnh khác</span>
+                     <input 
+                       type="file" 
+                       ref={fileInputRef} 
+                       hidden 
+                       accept="image/*"
+                       onChange={handleAvatarUpload}
+                     />
+                  </div>
+                </div>
+
+                {/* Đổi tên */}
+                <div className="setting-item">
+                  <label>Tên hiển thị</label>
+                  <input 
+                    type="text" 
+                    value={walletName} 
+                    onChange={handleNameChange}
+                    className="input-name"
+                    placeholder="Nhập tên ví..."
+                  />
+                </div>
+
+                <div className="setting-row">
+                  <span>Tiền tệ</span>
+                  <button className="btn-toggle" onClick={() => setCurrency(c => c === 'USD' ? 'VND' : 'USD')}>
+                    {currency === 'USD' ? '🇺🇸 USD' : '🇻🇳 VND'}
+                  </button>
+                </div>
+
+                <div className="setting-row">
+                  <span>Giao diện</span>
+                  <button className="btn-toggle" onClick={() => setTheme(t => t === 'light' ? 'dark' : 'light')}>
+                    {theme === 'light' ? '☀️ Sáng' : '🌙 Tối'}
+                  </button>
+                </div>
+
+                {/* NÚT LƯU CÀI ĐẶT */}
+                <button className="btn-save-settings" onClick={handleSaveSettings}>
+                  💾 Lưu thay đổi
+                </button>
+
+                <div className="divider"></div>
+
+                {/* NÚT ĐĂNG XUẤT */}
+                <button className="btn-logout-menu" onClick={handleLogout}>
+                  🚪 Đăng xuất account
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </header>
 
@@ -307,12 +396,18 @@ export default function Dashboard() {
       <div className="wallet-card">
         <div className="wallet-label">Tổng Tài Sản Ước Tính</div>
         <div className="wallet-balance">{formatMoney(totalBalanceUSD)}</div>
-        <div className="wallet-sub-info">
-          Khả dụng: {mainCoin.balance} {mainCoin.symbol}
+        
+        {/* ID VÍ REDESIGN: Nằm giữa Balance và Khả dụng */}
+        <div className="wallet-id-pill" onClick={() => copyToClipboard(displayAddress)}>
+          <span className="id-icon">🆔</span>
+          <span className="id-text">
+            {displayAddress !== "Chưa kết nối" ? displayAddress : "Chưa kết nối"}
+          </span>
+          <span className="copy-icon">📋</span>
         </div>
-        <div className="wallet-address-box" onClick={() => copyToClipboard(displayAddress)}>
-          {displayAddress !== "Chưa kết nối" ? `${displayAddress.slice(0,6)}...${displayAddress.slice(-4)}` : "Chưa kết nối ví"}
-          <span className="copy-text">Sao chép</span>
+
+        <div className="wallet-sub-info">
+          Khả dụng: <strong>{mainCoin.balance} {mainCoin.symbol}</strong>
         </div>
       </div>
 
@@ -324,7 +419,7 @@ export default function Dashboard() {
       {/* 4. MAIN GRID LAYOUT */}
       <div className="dashboard-grid">
         
-        {/* CỘT TRÁI: ASSETS + NFTS + ADDRESS BOOK */}
+        {/* CỘT TRÁI */}
         <div className="left-col">
           <div className="tab-container">
             <button 
@@ -349,7 +444,6 @@ export default function Dashboard() {
                   </button>
                 </div>
                 
-                {/* --- KHU VỰC CUỘN DANH SÁCH TÀI SẢN (Có height cứng để cuộn) --- */}
                 <div style={{ height: '350px', overflowY: 'auto', paddingRight: '5px' }}>
                   {assets.length > 0 ? assets.map((asset, idx) => (
                     <div className="list-item" key={idx}>
@@ -382,11 +476,9 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* CỘT PHẢI: BIỂU ĐỒ + LỊCH SỬ GIAO DỊCH */}
+        {/* CỘT PHẢI */}
         <div className="right-col">
-          {/* Sửa lỗi biểu đồ: Cần có height cứng cho thẻ cha */}
           <div className="section-box" style={{marginBottom: 24, height: '450px', display:'flex', flexDirection:'column'}}>
-             {/* Component biểu đồ */}
              <PriceChart coinId="ethereum" currency={currency.toLowerCase()} />
           </div>
 
@@ -395,7 +487,6 @@ export default function Dashboard() {
               <div className="section-title">Lịch sử gần đây</div>
             </div>
 
-            {/* --- KHU VỰC CUỘN LỊCH SỬ GIAO DỊCH --- */}
             <div style={{ height: '350px', overflowY: 'auto', paddingRight: '5px' }}>
               {transactions.length > 0 ? transactions.map(tx => {
                 const isReceive = tx.to.toLowerCase() === web3Address?.toLowerCase();

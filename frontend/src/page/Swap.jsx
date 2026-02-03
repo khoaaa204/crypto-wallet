@@ -1,32 +1,39 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 
+
 export default function Swap() {
-  // URL của Uniswap (Theme Dark cho hợp với web của bạn)
+  // Sử dụng link Uniswap cơ bản
   const uniswapUrl = "https://app.uniswap.org/#/swap?theme=dark";
 
   return (
     <div className="swap-page-container">
       
-      {/* 1. HEADER CỦA TRANG SWAP */}
+      {/* HEADER */}
       <div className="swap-header">
-        <h2 className="swap-title">🟦 Hoán đổi Token (DEX)</h2>
+        <div className="swap-header-left">
+           <h2 className="swap-title">🔄 Hoán đổi Token (DEX)</h2>
+           <p className="swap-subtitle">Giao dịch an toàn qua Uniswap</p>
+        </div>
+        
         <Link to="/dashboard" className="back-btn">
-          Về Dashboard
+          ← Về Dashboard
         </Link>
       </div>
 
-      {/* 2. KHUNG CHỨA UNISWAP (PHẦN QUAN TRỌNG NHẤT) */}
+      {/* KHUNG UNISWAP */}
       <div className="uniswap-container">
+        {/* THAY ĐỔI Ở ĐÂY: Thêm height="650px" trực tiếp */}
         <iframe
           title="Uniswap"
           src={uniswapUrl}
           width="100%"
-          height="100%"
+          height="650px" 
           style={{
             border: 'none',
             borderRadius: '16px',
-            backgroundColor: '#131a2a' // Màu nền trùng với Uniswap dark
+            backgroundColor: '#131a2a',
+            display: 'block'
           }}
         />
       </div>

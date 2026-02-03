@@ -1,9 +1,8 @@
 /* --- GLOBAL RESET (FIX SCROLL) --- */
-/* Bắt buộc trang web phải cho phép cuộn */
 html, body, #root {
   height: auto !important;
   min-height: 100vh;
-  overflow-y: auto !important; /* Hiện thanh cuộn trình duyệt */
+  overflow-y: auto !important;
   overflow-x: hidden;
 }
 
@@ -47,7 +46,7 @@ body {
   max-width: 1280px;
   margin: 0 auto;
   padding: 24px;
-  padding-bottom: 100px; /* Thêm khoảng trống dưới cùng để dễ cuộn */
+  padding-bottom: 100px;
   height: auto !important;
   overflow: visible !important;
 }
@@ -68,6 +67,7 @@ body {
   margin: 0;
   background: linear-gradient(to right, var(--primary), #8b5cf6);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
@@ -76,9 +76,10 @@ body {
   gap: 10px;
   align-items: center;
   flex-wrap: wrap;
+  position: relative; /* Cần thiết cho Dropdown */
 }
 
-.network-select, .btn-action, .theme-btn, .logout-btn {
+.network-select, .btn-action, .logout-btn {
   padding: 10px 16px;
   border-radius: 12px;
   border: 1px solid var(--border);
@@ -113,19 +114,156 @@ body {
 }
 .logout-btn:hover { background: var(--danger); color: white; }
 
-/* ALERT */
-.alert-warning {
-  background: rgba(245, 158, 11, 0.15);
-  color: #b45309;
-  padding: 12px 20px;
-  border-radius: 12px;
-  margin-bottom: 24px;
-  border: 1px solid rgba(245, 158, 11, 0.3);
+/* === NEW WALLET PROFILE CSS === */
+.wallet-profile-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-card);
+  padding: 5px 10px;
+  border-radius: 30px;
+  border: 1px solid var(--border);
+  position: relative;
+}
+
+.wallet-info {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+.wallet-avatar-small {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--primary);
+}
+
+.wallet-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.w-name {
+  font-weight: 600;
+  color: var(--text-main);
   font-size: 14px;
 }
+
+.w-addr {
+  font-size: 11px;
+  color: var(--text-sub);
+}
+
+.btn-settings {
+  background: transparent;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  color: var(--text-sub);
+  transition: 0.3s;
+  padding: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-settings:hover {
+  color: var(--primary);
+  transform: rotate(45deg);
+}
+
+/* --- Settings Dropdown --- */
+.settings-dropdown {
+  position: absolute;
+  top: 60px;
+  right: 0;
+  width: 280px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 15px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+  z-index: 1000;
+  color: var(--text-main);
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.settings-dropdown h3 {
+  margin: 0 0 15px 0;
+  font-size: 16px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 8px;
+  color: var(--text-main);
+}
+
+.setting-item {
+  margin-bottom: 15px;
+}
+
+.setting-item label {
+  display: block;
+  font-size: 12px;
+  color: var(--text-sub);
+  margin-bottom: 5px;
+}
+
+.avatar-uploader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  background: var(--bg-body);
+  transition: 0.2s;
+  border: 1px dashed var(--border);
+}
+.avatar-uploader:hover { border-color: var(--primary); }
+.avatar-uploader img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
+
+.input-name {
+  width: 100%;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg-body);
+  color: var(--text-main);
+  outline: none;
+  box-sizing: border-box; /* Quan trọng để không bị tràn */
+}
+.input-name:focus { border-color: var(--primary); }
+
+.divider { height: 1px; background: var(--border); margin: 10px 0; }
+
+.setting-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  font-size: 14px;
+  color: var(--text-main);
+}
+
+.btn-toggle {
+  background: var(--bg-body);
+  border: 1px solid var(--border);
+  color: var(--text-main);
+  padding: 5px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 12px;
+}
+.btn-toggle:hover { border-color: var(--primary); }
+
+/* === END NEW CSS === */
 
 /* MARKET TICKER */
 .market-grid {
@@ -144,7 +282,18 @@ body {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  
+  /* --- HIỆU ỨNG NHẤP NHÔ (HOVER EFFECT) --- */
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  cursor: pointer;
 }
+
+.market-card:hover {
+  transform: translateY(-5px) scale(1.02); /* Bay lên 5px và phóng to nhẹ */
+  box-shadow: 0 10px 20px rgba(0,0,0,0.1); /* Tăng bóng đổ */
+  border-color: var(--primary); /* Đổi màu viền */
+}
+/* ------------------------------------------- */
 
 .coin-name { font-size: 12px; color: var(--text-sub); font-weight: 600; text-transform: uppercase; }
 .coin-price { font-size: 18px; font-weight: 700; color: var(--text-main); }
@@ -165,36 +314,24 @@ body {
   overflow: hidden;
 }
 
-.wallet-card::before {
-  content: '';
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 60%);
-  transform: rotate(45deg);
-}
+/* ... Các phần CSS còn lại của bạn giữ nguyên ... */
+/* ACTION BUTTONS, GRID LAYOUT, SECTIONS, LIST ITEMS, TABS... */
+/* Tôi giữ nguyên phần cũ để tránh làm rối file */
 
-.wallet-label { font-size: 14px; opacity: 0.9; margin-bottom: 8px; }
-.wallet-balance { font-size: 48px; font-weight: 800; margin-bottom: 8px; letter-spacing: -1px; }
-.wallet-sub-info { font-size: 16px; opacity: 0.8; margin-bottom: 20px; }
-
-.wallet-address-box {
-  background: rgba(255, 255, 255, 0.2);
-  display: inline-flex;
+/* ALERT */
+.alert-warning {
+  background: rgba(245, 158, 11, 0.15);
+  color: #b45309;
+  padding: 12px 20px;
+  border-radius: 12px;
+  margin-bottom: 24px;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  border-radius: 20px;
-  cursor: pointer;
-  transition: background 0.2s;
-  backdrop-filter: blur(5px);
+  gap: 10px;
+  font-size: 14px;
 }
-.wallet-address-box:hover { background: rgba(255, 255, 255, 0.3); }
-.copy-text { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
 
-/* ACTION BUTTONS */
 .action-buttons {
   display: flex;
   justify-content: center;
@@ -218,7 +355,6 @@ body {
 .btn-receive { background: var(--text-main); color: var(--bg-body); border: 1px solid var(--text-main); }
 .action-btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
 
-/* GRID LAYOUT */
 .dashboard-grid {
   display: grid;
   grid-template-columns: 2fr 1.2fr;
@@ -229,16 +365,14 @@ body {
   .dashboard-grid { grid-template-columns: 1fr; }
 }
 
-/* SECTIONS */
 .section-box {
   background: var(--bg-card);
   border-radius: var(--radius);
   border: 1px solid var(--border);
   padding: 24px;
   box-shadow: var(--shadow-sm);
-  /* height: auto;  <-- Xóa dòng này, để inline style trong JSX quyết định nếu cần */
   min-height: 200px;
-  overflow: visible !important; /* Đảm bảo không bị cắt nội dung */
+  overflow: visible !important;
 }
 
 .section-header {
@@ -260,7 +394,6 @@ body {
 }
 .btn-add-token:hover { text-decoration: underline; }
 
-/* LIST ITEMS */
 .list-item {
   display: flex;
   justify-content: space-between;
@@ -288,7 +421,6 @@ body {
 .asset-amount { font-size: 13px; color: var(--text-sub); }
 .asset-value { font-weight: 700; color: var(--text-main); font-size: 15px; }
 
-/* TABS */
 .tab-container {
   display: flex;
   background: var(--bg-body);
@@ -316,98 +448,112 @@ body {
   box-shadow: var(--shadow-sm);
 }
 
-/* CUSTOM SCROLLBAR (Toàn trang + List con) */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.05);
-  border-radius: 4px;
-}
-::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 4px;
-  transition: background 0.2s;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: var(--primary);
-}
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.05); border-radius: 4px; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; transition: background 0.2s; }
+::-webkit-scrollbar-thumb:hover { background: var(--primary); }
 
 [data-theme='dark'] ::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.05); }
 [data-theme='dark'] ::-webkit-scrollbar-thumb { background: #475569; }
 [data-theme='dark'] ::-webkit-scrollbar-thumb:hover { background: var(--primary); }
-* --- CSS CHO TRANG SWAP --- */
-
-/* 1. Container bao quanh toàn bộ trang */
-.swap-page-container {
-  min-height: 100vh;
-  background-color: #0f172a; /* Màu nền tối (Dark mode) */
-  padding: 24px;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
+/* --- 1. SETTINGS DROPDOWN BUTTONS --- */
+.btn-save-settings {
+  width: 100%;
+  padding: 10px;
+  background-color: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: 0.2s;
+  font-size: 13px;
 }
 
-/* 2. Header (Tiêu đề + Nút Back) */
-.swap-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-  max-width: 1200px;
+.btn-save-settings:hover {
+  background-color: var(--primary-hover);
+}
+
+.btn-logout-menu {
   width: 100%;
+  padding: 10px;
+  background-color: rgba(239, 68, 68, 0.1); /* Nền đỏ nhạt */
+  color: var(--danger);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+.btn-logout-menu:hover {
+  background-color: var(--danger);
+  color: white;
+}
+
+/* --- 2. WALLET ID PILL (REDESIGN) --- */
+.wallet-id-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.15); /* Nền kính mờ */
+  backdrop-filter: blur(8px);
+  padding: 8px 16px;
+  border-radius: 50px; /* Bo tròn hoàn toàn */
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: 15px; /* Cách phần Khả dụng một chút */
+  max-width: 80%; /* Giới hạn chiều rộng */
   margin-left: auto;
   margin-right: auto;
 }
 
-.swap-title {
-  color: #8b5cf6; /* Màu tím Crypto */
-  margin: 0;
-  font-size: 24px;
+.wallet-id-pill:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
 }
 
-.back-btn {
-  background-color: #4b5563;
-  color: white;
-  padding: 10px 20px;
-  text-decoration: none;
-  border-radius: 8px;
-  font-weight: 600;
-  transition: background 0.2s;
+.wallet-id-pill:active {
+  transform: scale(0.98);
 }
 
-.back-btn:hover {
-  background-color: #374151;
+.id-icon {
+  font-size: 16px;
 }
 
-/* 3. KHUNG CHỨA IFRAME (QUAN TRỌNG NHẤT) */
-.uniswap-container {
-  flex: 1; /* Chiếm hết khoảng trống còn lại */
-  width: 100%;
-  max-width: 1200px; /* Giới hạn chiều rộng cho đẹp */
-  
-  /* ĐÂY LÀ DÒNG FIX LỖI CỦA BẠN: */
-  height: 700px;       /* Chiều cao cố định */
-  min-height: 700px;   /* Đảm bảo không bao giờ bé hơn 700px */
-  
-  margin: 0 auto;
-  border: 1px solid #334155;
-  border-radius: 16px;
-  overflow: hidden; /* Bo tròn góc */
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+.id-text {
+  font-family: 'Consolas', 'Monaco', monospace; /* Font code cho dễ nhìn số */
+  font-size: 14px;
+  color: #fff;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
 }
 
-/* Responsive cho mobile */
-@media (max-width: 768px) {
-  .swap-header {
-    flex-direction: column;
-    gap: 15px;
-    align-items: flex-start;
-  }
-  
-  .uniswap-container {
-    height: 600px; /* Mobile có thể thấp hơn chút */
-    min-height: 600px;
-  }
+.copy-icon {
+  font-size: 14px;
+  opacity: 0.7;
+}
+
+.wallet-id-pill:hover .copy-icon {
+  opacity: 1;
+}
+
+/* Điều chỉnh lại wallet-sub-info (Phần Khả dụng) cho thoáng hơn */
+.wallet-sub-info {
+  font-size: 15px;
+  opacity: 0.9;
+  margin-bottom: 10px;
+  margin-top: 5px;
+  color: rgba(255, 255, 255, 0.9);
 }
